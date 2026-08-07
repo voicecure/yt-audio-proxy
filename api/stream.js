@@ -8,11 +8,11 @@ function extractVideoId(url) {
   return (match && match[2].length === 11) ? match[2] : null;
 }
 
-// Vercel IP 차단을 피해 사용자 기기에서 직접 음원을 추출하는 우회 함수
+// 브라우저에서 직접 다중 우회 노드를 순회하여 음원을 가져오는 함수
 async function fetchAudioStreamUrl(videoId) {
   const targetUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-  // 1차 시도: Cobalt 공식 API
+  // 1차 시도: Cobalt API
   try {
     const res = await fetch('https://api.cobalt.tools/', {
       method: 'POST',
@@ -20,51 +20,60 @@ async function fetchAudioStreamUrl(videoId) {
       body: JSON.stringify({ url: targetUrl, downloadMode: 'audio', audioFormat: 'mp3' })
     });
     if (res.ok) {
-      const data = await res.json();
-      if (data && data.url) return data.url;
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data && data.url) return data.url;
+      }
     }
   } catch (e) {}
 
-  // 2차 시도: Invidious 분산 노드 순회
-  const invidiousNodes = [
-    'https://inv.nadeko.net',
-    'https://invidious.nerdvpn.de',
-    'https://inv.tux.pizza',
-    'https://invidious.drgns.space'
-  ];
-
-  for (const node of invidiousNodes) {
-    try {
-      const res = await fetch(`${node}/api/v1/videos/${videoId}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.adaptiveFormats) {
-          const audio = data.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
-          if (audio && audio.url) return audio.url;
-        }
-      }
-    } catch (e) {}
-  }
-
-  // 3차 시도: Piped 분산 노드 순회
+  // 2차 시도: Piped 분산 API 노드 순회
   const pipedNodes = [
     'https://api.piped.privacydev.net',
-    'https://pipedapi.kavin.rocks'
+    'https://pipedapi.kavin.rocks',
+    'https://pipedapi.tokhmi.xyz'
   ];
 
   for (const node of pipedNodes) {
     try {
       const res = await fetch(`${node}/streams/${videoId}`);
       if (res.ok) {
-        const data = await res.json();
-        if (data && data.audioStreams && data.audioStreams.length > 0) {
-          return data.audioStreams[0].url;
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data && data.audioStreams && data.audioStreams.length > 0) {
+            return data.audioStreams[0].url;
+          }
         }
       }
     } catch (e) {}
   }
 
-  throw new Error("음원을 불러올 수 없습니다. 다른 유튜브 반주 링크로 시도해 보세요.");
+  // 3차 시도: Invidious 분산 API 노드 순회
+  const invidiousNodes = [
+    'https://inv.nadeko.net',
+    'https://invidious.nerdvpn.de',
+    'https://inv.tux.pizza'
+  ];
+
+  for (const node of invidiousNodes) {
+    try {
+      const res = await fetch(`${node}/api/v1/videos/${videoId}`);
+      if (res.ok) {
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const data = await res.json();
+          if (data && data.adaptiveFormats) {
+            const audio = data.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
+            if (audio && audio.url) return audio.url;
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  throw new Error("음원 추출에 실패했습니다. 다른 유튜브 링크로 시도해 보세요.");
 }
 
 async function loadAudioFromLink() {
@@ -78,7 +87,7 @@ async function loadAudioFromLink() {
   }
 
   status.style.color = "#3b52d4";
-  status.innerText = "⏳ 반주 우회 추출 중...";
+  status.innerText = "⏳ 반주 추출 중...";
 
   try {
     const audioUrl = await fetchAudioStreamUrl(videoId);
