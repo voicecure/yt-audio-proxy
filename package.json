@@ -1,0 +1,7 @@
+{
+  "name": "yt-audio-proxy",
+  "version": "1.0.0",
+  "dependencies": {
+    "@distube/ytdl-core": "^4.15.9"
+  }
+}
