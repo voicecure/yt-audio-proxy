@@ -1,8 +1,8 @@
 let grainPlayer = null;
 let isPlaying = false;
 
-// 복잡한 vercel.app 주소 필요 없이 내부 API 경로로 바로 통신합니다!
-const VERCEL_SERVER_URL = "/api/stream?id=";
+// 유그린 NAS 내부 IP 연결 완료
+const VERCEL_SERVER_URL = "http://172.30.1.55:3000/api/stream?id=";
 
 function extractVideoId(url) {
   if (!url) return null;
