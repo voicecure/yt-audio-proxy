@@ -1,8 +1,8 @@
 let grainPlayer = null;
 let isPlaying = false;
 
-// 유그린 NAS 내부 IP 연결 완료
-const VERCEL_SERVER_URL = "http://172.30.1.55:3000/api/stream?id=";
+// 상대 경로 지정으로 보안 차단 완벽 회피
+const VERCEL_SERVER_URL = "/api/stream?id=";
 
 function extractVideoId(url) {
   if (!url) return null;
