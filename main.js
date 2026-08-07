@@ -21,30 +21,34 @@ async function loadAudioFromLink() {
     return;
   }
 
-  status.innerText = "⏳ Vercel 서버에서 음원 연결 중...";
+  status.style.color = "#3b52d4";
+  status.innerText = "⏳ Vercel 서버에서 반주 추출 중...";
 
   try {
     const res = await fetch(VERCEL_SERVER_URL + videoId);
     const data = await res.json();
 
-    if (!data.url) throw new Error("음원 주소 수신 실패");
+    if (!res.ok || !data.url) {
+      throw new Error(data.error || "음원 수신 실패");
+    }
 
-    // 가사 영상 출력
     const iframe = document.getElementById('ytIframe');
     iframe.src = "https://www.youtube.com/embed/" + videoId + "?enablejsapi=1&mute=1";
     document.getElementById('videoContainer').style.display = "block";
 
-    // Tone.js 오디오 엔진 연동
     if (grainPlayer) grainPlayer.dispose();
 
     grainPlayer = new Tone.GrainPlayer(data.url, () => {
-      status.innerText = "🟢 음원 로드 완료! 키와 박자를 조절해 보세요.";
+      status.style.color = "#10b981";
+      status.innerText = "🟢 준비 완료! 키와 박자를 조절하여 재생해 보세요.";
     }).toDestination();
 
     grainPlayer.overlap = 0.1;
 
   } catch (err) {
-    status.innerText = "⚠️ 음원을 가져오지 못했습니다. Vercel 서버 상태를 확인해 보세요.";
+    console.error("상세 원인:", err);
+    status.style.color = "#ef4444";
+    status.innerText = "⚠️ " + err.message;
   }
 }
 
