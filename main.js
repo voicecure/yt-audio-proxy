@@ -1,8 +1,8 @@
 let grainPlayer = null;
 let isPlaying = false;
 
-// 1단계에서 배포한 본인의 Vercel 주소를 입력해 보세요
-const VERCEL_SERVER_URL = "https://your-vercel-app.vercel.app/api/stream?id=";
+// 복사한 주소가 https://yt-audio-proxy-abc.vercel.app 인 경우의 작성 예시
+const VERCEL_SERVER_URL = "https://yt-audio-proxy-abc.vercel.app/api/stream?id=";
 
 function extractVideoId(url) {
   if (!url) return null;
