@@ -1,8 +1,8 @@
 let grainPlayer = null;
 let isPlaying = false;
 
-// 복사한 주소가 https://yt-audio-proxy-abc.vercel.app 인 경우의 작성 예시
-const VERCEL_SERVER_URL = "https://yt-audio-proxy-abc.vercel.app/api/stream?id=";
+// main.js 상단 (끝에 /api/stream?id= 구문을 반드시 붙여주세요)
+const VERCEL_SERVER_URL = "https://voicecure.vercel.app/api/stream?id=";
 
 function extractVideoId(url) {
   if (!url) return null;
