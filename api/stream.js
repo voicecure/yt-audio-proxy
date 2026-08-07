@@ -1,5 +1,3 @@
-const ytdl = require('@distube/ytdl-core');
-
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -10,38 +8,37 @@ module.exports = async (req, res) => {
   }
 
   const { id } = req.query;
-  if (!id) return res.status(400).json({ error: 'Video ID missing' });
+  if (!id) return res.status(400).json({ error: 'No video ID' });
 
-  // 1차 시도: Cobalt 파이프라인 (IP 차단 회피)
+  // 1차 우회 노드 (Cobalt API)
   try {
-    const cobaltRes = await fetch('https://co.wuk.sh/api/json', {
+    const r1 = await fetch('https://api.cobalt.tools/', {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${id}`, isAudioOnly: true })
+      body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${id}`, downloadMode: 'audio' })
     });
-    if (cobaltRes.ok) {
-      const data = await cobaltRes.json();
-      if (data && data.url) return res.status(200).json({ url: data.url });
+    const d1 = await r1.json();
+    if (d1 && d1.url) return res.status(200).json({ url: d1.url });
+  } catch (e) {}
+
+  // 2차 우회 노드 (Invidious API)
+  try {
+    const r2 = await fetch(`https://inv.ts.sc/api/v1/videos/${id}`);
+    const d2 = await r2.json();
+    if (d2 && d2.adaptiveFormats) {
+      const audio = d2.adaptiveFormats.find(f => f.type && f.type.includes('audio'));
+      if (audio && audio.url) return res.status(200).json({ url: audio.url });
     }
   } catch (e) {}
 
-  // 2차 시도: Piped 분산 파이프라인
+  // 3차 우회 노드 (Piped API)
   try {
-    const pipedRes = await fetch(`https://pipedapi.kavin.rocks/streams/${id}`);
-    if (pipedRes.ok) {
-      const data = await pipedRes.json();
-      if (data && data.audioStreams && data.audioStreams.length > 0) {
-        return res.status(200).json({ url: data.audioStreams[0].url });
-      }
+    const r3 = await fetch(`https://pipedapi.kavin.rocks/streams/${id}`);
+    const d3 = await r3.json();
+    if (d3 && d3.audioStreams && d3.audioStreams.length > 0) {
+      return res.status(200).json({ url: d3.audioStreams[0].url });
     }
   } catch (e) {}
 
-  // 3차 시도: ytdl-core
-  try {
-    const info = await ytdl.getInfo(id);
-    const format = ytdl.chooseFormat(info.formats, { filter: 'audioonly', quality: 'highestaudio' });
-    if (format && format.url) return res.status(200).json({ url: format.url });
-  } catch (e) {}
-
-  return res.status(500).json({ error: 'All audio extraction methods failed' });
+  return res.status(500).json({ error: 'Audio fetch failed' });
 };
